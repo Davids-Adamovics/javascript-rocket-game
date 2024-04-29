@@ -1,1 +1,1 @@
-# javascript-todo-list
+# javascript-rocket-game
