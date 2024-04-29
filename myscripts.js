@@ -1,14 +1,16 @@
 let canvasWidth = 800;
 let canvasHeight = 600;
 
-var player; // player
-var playerXPosition = canvasWidth / 2 - 30; // X coordinates
-var playerYPosition = canvasHeight / 2 - 30; // Y coordinates
+var player;
+var playerXPosition = canvasWidth / 2 - 30;
+var playerYPosition = canvasHeight / 2 - 30;
 var spaceShip = new Image();
 spaceShip.src = 'img/img.png';
-this.rotation = 0;
+var rotation = 0; // Assuming this should not be 'this.rotation'
 var boost = false;
 var speed = 4;
+let boostAmount = 100; // Correctly initialized and globally accessible
+var boostLabel;
 
 var gravity = 0;
 var interval = setInterval(updateCanvas, 20);
@@ -17,14 +19,17 @@ var interval = setInterval(updateCanvas, 20);
 var keys = {};
 
 // key pressed
-document.addEventListener('keydown', function(event) {
+document.addEventListener('keydown', function (event) {
     keys[event.keyCode] = true;
     if (event.keyCode === 32) { // Space key for boosting
-        boost = true;
+        if (boostAmount > 0 && !boost) { // Only enable boost if there's amount left and not already boosting
+            boost = true;
+        }
     }
 });
 
-document.addEventListener('keyup', function(event) {
+// Key released
+document.addEventListener('keyup', function (event) {
     delete keys[event.keyCode];
     if (event.keyCode === 32) { // Space key for boosting
         boost = false;
@@ -35,7 +40,8 @@ document.addEventListener('keyup', function(event) {
 // start game function
 function startGame() {
     gameCanvas.start();
-    player = new createPlayer(50, 50); // creates a new player
+    player = new createPlayer(50, 50);  // creates a new player
+    boostLabel = new createBoostLabel(10, 30);  // creates a new label for displaying boost
 }
 
 // defines the game field with canvas
@@ -85,23 +91,31 @@ function createPlayer(width, height) {
         var top = 0;
         var leftSide = 0;
         var rightSide = canvasWidth - this.width;
-        if (this.y > ground ) {
+
+        // Check vertical boundaries
+        if (this.y > ground) {
             this.y = ground;
         }
-        else if (this.y < top) {
+        if (this.y < top) {
             this.y = top;
         }
-        else if (this.x > rightSide) {
+
+        // Check horizontal boundaries
+        if (this.x > rightSide) {
             this.x = rightSide;
         }
-        else if (this.x < leftSide) {
+        if (this.x < leftSide) {
             this.x = leftSide;
         }
     }
 
-    this.movePlayer = function() {
+
+    this.movePlayer = function () {
         var speed = boost ? 8 : 4; // Use ternary operator for clarity
-    
+        boost ? boostAmount-- : boostAmount+= 0.5;
+        if(boostAmount>100) boostAmount = 100;
+        if(boostAmount<0) boostAmount = 0;
+
         if (keys[37]) { // Left arrow
             this.x -= speed;
             this.rotation = -Math.PI / 2; // Rotate 90 degrees to the left
@@ -142,8 +156,35 @@ function updateCanvas() {
 
     // player.makeFall();
     player.movePlayer();
+    manageBoost();
     player.draw();
+    boostLabel.draw();
 
 }
+
+function createBoostLabel(x, y) {
+    this.x = x;
+    this.y = y;
+    this.draw = function() {
+        ctx = gameCanvas.context;
+        ctx.font = "25px Marker Felt";  // Setting font for the text
+        ctx.fillStyle = "black";  // Setting text color
+        this.text = "Boost: " + boostAmount;  // Setting text to show current boost amount
+        ctx.fillText(this.text, this.x, this.y);  // Drawing the text
+    }
+}
+
+// Function to manage boost usage
+function manageBoost() {
+    if (boost && boostAmount > 0) {
+        boostAmount--; // Decrement boost amount continuously while boosting
+    }
+    if (boostAmount <= 0) {
+        boost = false; // Automatically stop boosting when no boost amount left
+        boostAmount = 0; // Ensure boost amount doesn't go negative
+    }
+}
+
+
 
 
