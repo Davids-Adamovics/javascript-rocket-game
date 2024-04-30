@@ -3,7 +3,7 @@ let canvasWidth = 800;
 let canvasHeight = 600;
 var boostLabel;
 var interval = setInterval(updateCanvas, 20);
-
+var points = 0;
 // ============== Player ==============
 var player;
 var playerXPosition = canvasWidth / 2 - 30; //player spawn location
@@ -42,38 +42,88 @@ document.addEventListener('keyup', function (event) {
         boost = false;
     }
 });
+document.addEventListener('keydown', function(event) {
+    if (event.keyCode === 13) {  // Enter key
+        restartGame();
+    }
+});
 
+function restartGame() {
+    // Reset player, meteorites, and other necessary game state before restarting
+    playerXPosition = canvasWidth / 2 - 30;
+    playerYPosition = canvasHeight / 2 - 30;
+    boostAmount = 100;
+    allmeteorites = []; // Clear existing meteorites
+    alive = true; // Set game state to alive
+    interval = setInterval(updateCanvas, 20); // Restart game loop
+    startGame();
+}
 
 // start game function
 var allmeteorites = []; // Move this to a more global scope if necessary
+var meteoriteCreationInterval;
 
 function startGame() {
     gameCanvas.start();
-    player = new createPlayer(50, 50);  // Creates a new player
+    player = new createPlayer(50, 50); // Resets the player
+    boostLabel = new createBoostLabel(10, 30);
 
-    for (var i = 1; i < 10; i++) {
-        setTimeout(function() {
-            var meteorite = new createMetorite(50, 50); // Creates a new meteorite
-            allmeteorites.push(meteorite); // Add the new meteorite to the array
-        }, i * 1000);
-    }
+    // Clear any existing meteorite creation interval
+    clearInterval(meteoriteCreationInterval);
 
-    boostLabel = new createBoostLabel(10, 30);  // Creates a new label for displaying boost
+    // Set an interval to continuously spawn meteorites
+    meteoriteCreationInterval = setInterval(function() {
+        if (alive) { // Check if the game is still on
+            let meteorite = new createMetorite(50, 50);
+            allmeteorites.push(meteorite);
+            points++;
+        } else {
+            clearInterval(meteoriteCreationInterval); // Stop creating meteorites if not alive
+        }
+    }, 500); // Adjust the interval as needed for game balance
 }
 
+
+function endGame() {
+    gameCanvas.end();
+    alive = false; // Assuming 'alive' variable tracks if the game is running
+    clearInterval(interval); // Stop the game loop
+    
+}
+
+function startScreen() {
+
+}
 
 
 
 // defines the game field with canvas
 // store the data of a canvas
 var gameCanvas = {
-    canvas: document.createElement("canvas"), start: function () {
+    canvas: document.createElement("canvas"),
+    context: null,
+
+    start: function () {
         this.canvas.width = canvasWidth;
         this.canvas.height = canvasHeight;
         this.context = this.canvas.getContext("2d");
         document.body.insertBefore(this.canvas, document.body.childNodes[0]);
-    }
+    },
 
+    clear: function () {
+        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    },
+
+    end: function(){
+        this.clear();
+        this.context.fillStyle = "darkgrey";
+        this.context.font = "30px Arial";
+        this.context.fillStyle = "white";
+        this.context.textAlign = "center";
+        this.context.fillText("Game Over", this.canvas.width / 2, this.canvas.height / 2 - 40);
+        this.context.fillText("Points: " + points, this.canvas.width / 2, this.canvas.height / 2);
+        this.context.fillText("Press Enter to Restart", this.canvas.width / 2, this.canvas.height / 2 + 40);
+    }
 }
 
 // function create player
@@ -202,7 +252,7 @@ function createMetorite(width, height) {
         var deltaY = this.yend - this.ystart;
 
         // Determine step size based on gravity or a constant speed
-        var stepSize =4 ;  // Or some other appropriate value
+        var stepSize = 4;  // Or some other appropriate value
 
         // Normalize the distance vector
         var distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
@@ -265,6 +315,20 @@ function randomMeteoriteEndLocation() {
     }
 }
 
+function checkIfHit() {
+    allmeteorites.forEach(function (meteorite) {
+        if (player.x < meteorite.xstart + meteorite.width &&
+            player.x + player.width > meteorite.xstart &&
+            player.y < meteorite.ystart + meteorite.height &&
+            player.y + player.height > meteorite.ystart) {
+            console.log("Hit detected with a meteorite!");
+            endGame();
+            // Additional code to handle the hit (e.g., end game, reduce health, etc.)
+        }
+    });
+}
+
+
 function updateCanvas() {
     var ctx = gameCanvas.context;
     ctx.clearRect(0, 0, canvasWidth, canvasHeight);
@@ -273,10 +337,12 @@ function updateCanvas() {
     allmeteorites.forEach(function (meteorite) {
         meteorite.makeFall();
         meteorite.draw();
+
     });
 
     // Move and draw player
     player.movePlayer();
+    checkIfHit();
     manageBoost();
     player.draw();
     boostLabel.draw();
@@ -291,6 +357,18 @@ function createBoostLabel(x, y) {
         ctx.font = "25px Marker Felt";  // Setting font for the text
         ctx.fillStyle = "black";  // Setting text color
         this.text = "Boost: " + boostAmount;  // Setting text to show current boost amount
+        ctx.fillText(this.text, this.x, this.y);  // Drawing the text
+    }
+}
+
+function createPoints(x, y) {
+    this.x = x;
+    this.y = y;
+    this.draw = function () {
+        ctx = gameCanvas.context;
+        ctx.font = "25px Marker Felt";  // Setting font for the text
+        ctx.fillStyle = "black";  // Setting text color
+        this.text = "Points: " + boostAmount;  // Setting text to show current boost amount
         ctx.fillText(this.text, this.x, this.y);  // Drawing the text
     }
 }
