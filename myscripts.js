@@ -4,6 +4,8 @@ let canvasHeight = 600;
 var boostLabel;
 var interval = setInterval(updateCanvas, 20);
 var points = 0;
+var background = new Image();
+background.src = 'img/background.png';
 // ============== Player ==============
 var player;
 var playerXPosition = canvasWidth / 2 - 30; //player spawn location
@@ -67,6 +69,7 @@ function startGame() {
     gameCanvas.start();
     player = new createPlayer(50, 50); // Resets the player
     boostLabel = new createBoostLabel(10, 30);
+    pointsLabel = new createPointsLabel(canvasWidth-150,30);
 
     // Clear any existing meteorite creation interval
     clearInterval(meteoriteCreationInterval);
@@ -87,6 +90,7 @@ function startGame() {
 function endGame() {
     gameCanvas.end();
     alive = false; // Assuming 'alive' variable tracks if the game is running
+    points = 0;
     clearInterval(interval); // Stop the game loop
     
 }
@@ -252,7 +256,7 @@ function createMetorite(width, height) {
         var deltaY = this.yend - this.ystart;
 
         // Determine step size based on gravity or a constant speed
-        var stepSize = 4;  // Or some other appropriate value
+        var stepSize = 4 + (points*0.1);  // Or some other appropriate value
 
         // Normalize the distance vector
         var distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
@@ -317,9 +321,9 @@ function randomMeteoriteEndLocation() {
 
 function checkIfHit() {
     allmeteorites.forEach(function (meteorite) {
-        if (player.x < meteorite.xstart + meteorite.width &&
+        if (player.x < meteorite.xstart + (meteorite.width-20) &&
             player.x + player.width > meteorite.xstart &&
-            player.y < meteorite.ystart + meteorite.height &&
+            player.y < meteorite.ystart + (meteorite.height-20) &&
             player.y + player.height > meteorite.ystart) {
             console.log("Hit detected with a meteorite!");
             endGame();
@@ -346,6 +350,7 @@ function updateCanvas() {
     manageBoost();
     player.draw();
     boostLabel.draw();
+    pointsLabel.draw();
 }
 
 
@@ -355,20 +360,20 @@ function createBoostLabel(x, y) {
     this.draw = function () {
         ctx = gameCanvas.context;
         ctx.font = "25px Marker Felt";  // Setting font for the text
-        ctx.fillStyle = "black";  // Setting text color
+        ctx.fillStyle = "white";  // Setting text color
         this.text = "Boost: " + boostAmount;  // Setting text to show current boost amount
         ctx.fillText(this.text, this.x, this.y);  // Drawing the text
     }
 }
 
-function createPoints(x, y) {
+function createPointsLabel(x, y) {
     this.x = x;
     this.y = y;
     this.draw = function () {
         ctx = gameCanvas.context;
         ctx.font = "25px Marker Felt";  // Setting font for the text
-        ctx.fillStyle = "black";  // Setting text color
-        this.text = "Points: " + boostAmount;  // Setting text to show current boost amount
+        ctx.fillStyle = "white";  // Setting text color
+        this.text = "Points: " + points;  // Setting text to show current boost amount
         ctx.fillText(this.text, this.x, this.y);  // Drawing the text
     }
 }
