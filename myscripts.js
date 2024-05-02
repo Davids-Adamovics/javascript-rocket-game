@@ -44,13 +44,15 @@ document.addEventListener('keyup', function (event) {
         boost = false;
     }
 });
-document.addEventListener('keydown', function(event) {
+document.addEventListener('keydown', function (event) {
     if (event.keyCode === 13) {  // Enter key
         restartGame();
     }
 });
 
 function restartGame() {
+    clearInterval(interval);
+    points = 0;
     // Reset player, meteorites, and other necessary game state before restarting
     playerXPosition = canvasWidth / 2 - 30;
     playerYPosition = canvasHeight / 2 - 30;
@@ -65,17 +67,25 @@ function restartGame() {
 var allmeteorites = []; // Move this to a more global scope if necessary
 var meteoriteCreationInterval;
 
+function beforeStartGame() {
+    player = new createPlayer(50, 50); // Resets the player
+    boostLabel = new createBoostLabel(55, 30);
+    pointsLabel = new createPointsLabel(canvasWidth - 150, 30);
+    gameCanvas.beforeStart();
+}
+
+
 function startGame() {
     gameCanvas.start();
     player = new createPlayer(50, 50); // Resets the player
-    boostLabel = new createBoostLabel(10, 30);
-    pointsLabel = new createPointsLabel(canvasWidth-150,30);
+    boostLabel = new createBoostLabel(55, 30);
+    pointsLabel = new createPointsLabel(canvasWidth - 150, 30);
 
     // Clear any existing meteorite creation interval
     clearInterval(meteoriteCreationInterval);
 
     // Set an interval to continuously spawn meteorites
-    meteoriteCreationInterval = setInterval(function() {
+    meteoriteCreationInterval = setInterval(function () {
         if (alive) { // Check if the game is still on
             let meteorite = new createMetorite(50, 50);
             allmeteorites.push(meteorite);
@@ -92,7 +102,7 @@ function endGame() {
     alive = false; // Assuming 'alive' variable tracks if the game is running
     points = 0;
     clearInterval(interval); // Stop the game loop
-    
+
 }
 
 function startScreen() {
@@ -107,6 +117,21 @@ var gameCanvas = {
     canvas: document.createElement("canvas"),
     context: null,
 
+    beforeStart: function () {
+        this.canvas.width = canvasWidth;
+        this.canvas.height = canvasHeight;
+        this.context = this.canvas.getContext("2d");
+        document.body.insertBefore(this.canvas, document.body.childNodes[0]);
+        document.body.insertBefore(this.canvas, document.body.childNodes[0]);
+        this.context.fillStyle = "darkgrey";
+        this.context.font = "30px Arial";
+        this.context.fillStyle = "white";
+        this.context.textAlign = "center";
+        this.context.fillText("SpaceRiders", this.canvas.width / 2, this.canvas.height / 2 - 40);
+        this.context.fillText("To start the game", this.canvas.width / 2, this.canvas.height / 2);
+        this.context.fillText("press Enter", this.canvas.width / 2, this.canvas.height / 2 + 40);
+    },
+
     start: function () {
         this.canvas.width = canvasWidth;
         this.canvas.height = canvasHeight;
@@ -118,8 +143,12 @@ var gameCanvas = {
         this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
     },
 
-    end: function(){
+    end: function () {
         this.clear();
+        this.context.globalAlpha = 0.6;
+        this.context.fillStyle = "darkblue";
+        this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        this.context.globalAlpha = 1;
         this.context.fillStyle = "darkgrey";
         this.context.font = "30px Arial";
         this.context.fillStyle = "white";
@@ -127,6 +156,10 @@ var gameCanvas = {
         this.context.fillText("Game Over", this.canvas.width / 2, this.canvas.height / 2 - 40);
         this.context.fillText("Points: " + points, this.canvas.width / 2, this.canvas.height / 2);
         this.context.fillText("Press Enter to Restart", this.canvas.width / 2, this.canvas.height / 2 + 40);
+        this.context.globalAlpha = 0.6;
+        this.context.fillStyle = "gray";
+        this.context.fillRect(this.canvas.width / 2 - 200, this.canvas.height / 2 - 115, 400, 200);
+
     }
 }
 
@@ -186,7 +219,7 @@ function createPlayer(width, height) {
 
     this.movePlayer = function () {
         var speed = boost ? 8 : 4; // Use ternary operator for clarity
-        boost ? boostAmount-- : boostAmount += 0.5;
+        boost ? boostAmount-- : boostAmount += 1;
         if (boostAmount > 100) boostAmount = 100;
         if (boostAmount < 0) boostAmount = 0;
 
@@ -256,7 +289,7 @@ function createMetorite(width, height) {
         var deltaY = this.yend - this.ystart;
 
         // Determine step size based on gravity or a constant speed
-        var stepSize = 4 + (points*0.1);  // Or some other appropriate value
+        var stepSize = 4 + (points * 0.1);  // Or some other appropriate value
 
         // Normalize the distance vector
         var distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
@@ -321,9 +354,9 @@ function randomMeteoriteEndLocation() {
 
 function checkIfHit() {
     allmeteorites.forEach(function (meteorite) {
-        if (player.x < meteorite.xstart + (meteorite.width-20) &&
+        if (player.x < meteorite.xstart + (meteorite.width - 20) &&
             player.x + player.width > meteorite.xstart &&
-            player.y < meteorite.ystart + (meteorite.height-20) &&
+            player.y < meteorite.ystart + (meteorite.height - 20) &&
             player.y + player.height > meteorite.ystart) {
             console.log("Hit detected with a meteorite!");
             endGame();
